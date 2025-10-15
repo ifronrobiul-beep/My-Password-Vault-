@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-bg: #0d0c22;
+            --secondary-bg: #1a1a3a;
+            --accent-color1: #00f6ff;
+            --accent-color2: #ff00ea;
+            --text-color: #e0e0e0;
+            --border-color: rgba(0, 246, 255, 0.3);
+            --secondary-btn-bg: #3a3a5a;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .hidden { display: none !important; }
+
+        /* --- Global App Container --- */
+        .app-container {
+            width: 100%;
+            max-width: 900px;
+            min-height: 80vh;
+            background: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            position: relative;
+        }
+        
+        .btn-generic { padding: 0 1.5rem; border-radius: 8px; cursor: pointer; height: 44px; font-weight: 600; border: none; }
+        .btn-secondary { background: var(--secondary-btn-bg); color: var(--text-color); }
+        .btn-secondary:hover { background: #4a4a6a; }
+
+
+        /* --- Auth & Dashboard Styles --- */
+        .auth-container, .tool-dashboard-container {
+            width: 100%;
+            max-width: 450px;
+            background: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: 0 0 25px rgba(0, 246, 255, 0.1), 0 0 50px rgba(255, 0, 234, 0.1);
+        }
+        .tool-dashboard-container { max-width: 700px; }
+        .auth-container h1, .tool-dashboard-container h1 {
+            text-align: center;
+            font-weight: 600;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, var(--accent-color1), var(--accent-color2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .auth-container p, .tool-dashboard-container p { text-align: center; color: #a0a0a0; margin-bottom: 2rem; }
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+        .form-group input, .form-group select { width: 100%; padding: 12px 15px; background: var(--primary-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-color); font-size: 1rem; }
+        .btn-submit { width: 100%; padding: 14px; border: none; border-radius: 8px; background: linear-gradient(90deg, var(--accent-color1), var(--accent-color2)); color: var(--primary-bg); font-size: 1.1rem; font-weight: 600; cursor: pointer; }
+        .auth-link { display: block; text-align: center; margin-top: 1.5rem; color: var(--accent-color1); text-decoration: none; cursor: pointer; }
+        .error-message { color: var(--accent-color2); text-align: center; margin-top: 1rem; display: none; }
+        .tool-card { background-color: var(--primary-bg); border: 1px solid var(--border-color); transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .tool-card:hover { transform: translateY(-8px); box-shadow: 0 10px 25px rgba(0, 246, 255, 0.2); }
+        .back-to-dashboard-btn { background: var(--primary-bg); color: var(--text-color); padding: 8px 16px; border-radius: 8px; cursor: pointer; border: 1px solid var(--border-color); font-weight: 500; position: absolute; top: 1.5rem; left: 2rem; z-index: 50; }
+        
+        /* --- Vault App Styles --- */
+        #vaultApp h1 { color: var(--text-color); text-align: center; margin-bottom: 1rem; }
+        #vaultApp .controls { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
+        #vaultApp .search-input { flex-grow: 1; min-width: 200px; height: 44px; padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border-color); background-color: var(--primary-bg); color: var(--text-color); font-size: 1rem; }
+        #vaultApp .btn-add { background: var(--accent-color1); color: var(--primary-bg); }
+        #vaultApp .password-list { list-style: none; padding: 0; max-height: 55vh; overflow-y: auto; }
+        #vaultApp .password-item { background: var(--primary-bg); border-left: 3px solid var(--accent-color1); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
+        #vaultApp .actions button { background: none; border: 1px solid var(--border-color); color: var(--text-color); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; }
+        #vaultApp .logout-btn { position: absolute; top: 1.5rem; right: 2rem; background: none; border: none; color: #a0a0a0; font-size: 1.5rem; cursor: pointer; }
+        #vaultApp .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        #vaultApp .modal-content { background: var(--secondary-bg); padding: 2rem; border-radius: 16px; border: 1px solid var(--border-color); width: 90%; max-width: 500px; position: relative; }
+        #vaultApp .modal .close-btn { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: #a0a0a0; font-size: 1.5rem; cursor: pointer; }
+        
+        /* --- Discord App Styles --- */
+        #discordApp { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body>
+
+    <div id="authContainer">
+        <div id="loginScreen" class="auth-container hidden">
+            <h1>Dashboard Login</h1><p>Securely access your tools.</p>
+            <form id="loginForm">
+                <div class="form-group"><label for="loginUsername">Username</label><input type="text" id="loginUsername" required></div>
+                <div class="form-group"><label for="loginPassword">Password</label><input type="password" id="loginPassword" required></div>
+                <button type="submit" class="btn-submit">Unlock</button>
+                <p id="loginError" class="error-message">Invalid username or password.</p>
+            </form>
+            <a id="forgotPasswordLink" class="auth-link">Forgot your password?</a>
+        </div>
+        <div id="setupScreen" class="auth-container hidden">
+            <h1>First-Time Setup</h1><p>Create your secure account to get started.</p>
+            <form id="setupForm">
+                <div class="form-group"><label for="setupUsername">Choose a Username</label><input type="text" id="setupUsername" required></div>
+                <div class="form-group"><label for="setupPassword">Create a Strong Password</label><input type="password" id="setupPassword" required></div>
+                <hr style="border-color: var(--border-color); margin: 2rem 0;"><p style="margin-bottom: 1rem;">Set up your recovery questions</p>
+                <div class="form-group"><label for="q1">Security Question 1</label><select id="q1" required></select><input type="text" id="a1" placeholder="Your Answer (case-sensitive)" required style="margin-top: 0.5rem;"></div>
+                <div class="form-group"><label for="q2">Security Question 2</label><select id="q2" required></select><input type="text" id="a2" placeholder="Your Answer (case-sensitive)" required style="margin-top: 0.5rem;"></div>
+                <button type="submit" class="btn-submit">Create Account</button>
+            </form>
+        </div>
+        <div id="recoveryScreen" class="auth-container hidden">
+            <h1>Password Recovery</h1><p>Answer your security questions to reset your password.</p>
+            <form id="recoveryForm">
+                <div class="form-group"><p id="recoveryQ1" style="font-style: italic; color: #a0a0a0;"></p><input type="text" id="recoveryA1" placeholder="Your Answer" required></div>
+                <div class="form-group"><p id="recoveryQ2" style="font-style: italic; color: #a0a0a0;"></p><input type="text" id="recoveryA2" placeholder="Your Answer" required></div>
+                <button type="submit" class="btn-submit">Verify Answers</button>
+                <p id="recoveryError" class="error-message">One or more answers are incorrect.</p>
+            </form>
+            <a id="backToLoginLink" class="auth-link">Back to Login</a>
+        </div>
+    </div>
+    
+    <div id="toolDashboard" class="tool-dashboard-container hidden">
+        <button id="mainLogoutBtn" class="logout-btn" title="Lock Dashboard" style="position:absolute; top: 1.5rem; right: 2rem; font-size:1.5rem; color: #a0a0a0; background: none; border: none; cursor: pointer;"><i class="fas fa-sign-out-alt"></i></button>
+        <h1>Tool Dashboard</h1><p>Choose a tool to get started.</p>
+        <div class="flex flex-col md:flex-row gap-8 mt-8">
+            <div id="selectVault" class="tool-card w-full p-8 rounded-2xl cursor-pointer text-center">
+                <i class="fas fa-shield-halved fa-3x mb-4 text-sky-400"></i><h2 class="text-2xl font-bold mb-2">Cyber Vault</h2><p class="text-gray-400">Manage your passwords.</p>
+            </div>
+            <div id="selectDiscord" class="tool-card w-full p-8 rounded-2xl cursor-pointer text-center">
+                <i class="fab fa-discord fa-3x mb-4 text-indigo-400"></i><h2 class="text-2xl font-bold mb-2">Discord Sender</h2><p class="text-gray-400">Send webhook messages.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="vaultApp" class="app-container hidden">
+        <button class="back-to-dashboard-btn"><i class="fas fa-arrow-left mr-2"></i>Dashboard</button>
+        <button id="vaultLogoutBtn" class="logout-btn" title="Lock Dashboard"><i class="fas fa-sign-out-alt"></i></button>
+        <h1>My Password Vault</h1>
+        <div class="controls">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search entries...">
+            <button id="addPasswordBtn" class="btn-generic btn-add">Add New</button>
+            <button id="exportVaultBtn" class="btn-generic btn-secondary">Export Vault</button>
+            <input type="file" id="importVaultInput" class="hidden" accept=".json, .txt">
+            <button id="importVaultBtn" class="btn-generic btn-secondary">Import Vault</button>
+        </div>
+        <ul id="passwordList" class="password-list"></ul>
+        <div id="passwordModal" class="modal hidden"><div class="modal-content"><button class="close-btn">&times;</button><h2 id="modalTitle" style="text-align:center; margin-bottom: 1.5rem;">Add New Entry</h2><form id="passwordForm"><input type="hidden" id="passwordId"><div class="form-group"><label for="websiteName">Website Name</label><input type="text" id="websiteName" required></div><div class="form-group"><label for="entryUsername">Username / Email</label><input type="text" id="entryUsername" required></div><div class="form-group"><label for="entryPassword">Password</label><input type="password" id="entryPassword" required></div><button type="submit" class="btn-submit">Save Entry</button></form></div></div>
+    </div>
+    
+    <div id="discordApp" class="hidden">
+        <div class="min-h-screen w-full flex items-center justify-center p-4">
+             <button class="back-to-dashboard-btn"><i class="fas fa-arrow-left mr-2"></i>Dashboard</button>
+            <div class="w-full max-w-4xl bg-gray-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-700">
+                <header class="p-6 bg-slate-900/70 border-b border-slate-700"><div class="flex items-center space-x-4"><div class="p-3 bg-blue-500 rounded-lg"><i class="fab fa-discord fa-2x text-white"></i></div><div><h1 class="text-2xl font-bold text-white">Discord Webhook Dashboard</h1><p class="text-slate-400 text-sm">Send messages to your Discord server instantly.</p></div></div></header>
+                <main class="p-6 md:p-8 grid md:grid-cols-2 gap-8">
+                    <div class="flex flex-col space-y-6">
+                        <div><label for="webhookUrl" class="block text-sm font-medium text-slate-300 mb-2">Webhook URL</label><div class="relative"><i class="fas fa-link absolute top-1/2 left-3 -translate-y-1/2 text-slate-500"></i><input type="url" id="webhookUrl" class="w-full pl-10 pr-4 py-2 rounded-lg" placeholder="https://discord.com/api/webhooks/..." style="background-color: #1e293b; border: 1px solid #334155;"></div></div>
+                        <div><label for="messageContent" class="block text-sm font-medium text-slate-300 mb-2">Message Content</label><textarea id="messageContent" rows="8" class="w-full p-3 rounded-lg" placeholder="Enter your message here..." style="background-color: #1e293b; border: 1px solid #334155;"></textarea></div>
+                    </div>
+                    <div class="flex flex-col space-y-6">
+                        <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                            <h3 class="font-semibold text-white mb-3">Bot Appearance (Optional)</h3>
+                            <div class="space-y-4">
+                                <div><label for="username" class="block text-sm font-medium text-slate-300 mb-2">Username</label><div class="relative"><i class="fas fa-user-circle absolute top-1/2 left-3 -translate-y-1/2 text-slate-500"></i><input type="text" id="username" class="w-full pl-10 pr-4 py-2 rounded-lg" placeholder="Custom Bot Name" style="background-color: #1e293b; border: 1px solid #334155;"></div></div>
+                                <div><label for="avatarUrl" class="block text-sm font-medium text-slate-300 mb-2">Avatar URL</label><div class="relative"><i class="fas fa-image absolute top-1/2 left-3 -translate-y-1/2 text-slate-500"></i><input type="url" id="avatarUrl" class="w-full pl-10 pr-4 py-2 rounded-lg" placeholder="https://i.imgur.com/..." style="background-color: #1e293b; border: 1px solid #334155;"></div></div>
+                            </div>
+                        </div>
+                        <div class="flex-grow flex flex-col justify-end space-y-4">
+                            <div id="statusMessage" class="p-4 rounded-lg text-sm text-center hidden"></div>
+                            <button id="sendMessageBtn" class="w-full font-bold py-3 rounded-lg flex items-center justify-center space-x-2" style="background-color:#5865F2; color:white;"><i class="fas fa-paper-plane"></i><span>Send Message</span><div id="spinner" class="animate-spin rounded-full h-5 w-5 border-b-2 border-white hidden"></div></button>
+                            <button id="clearFormBtn" class="w-full font-medium py-2 rounded-lg" style="background-color:#4f545c; color:white;"><i class="fas fa-times"></i> Clear Form</button>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- SCREEN MANAGEMENT ---
+    const screens = { auth: document.getElementById('authContainer'), login: document.getElementById('loginScreen'), setup: document.getElementById('setupScreen'), recovery: document.getElementById('recoveryScreen'), dashboard: document.getElementById('toolDashboard'), vault: document.getElementById('vaultApp'), discord: document.getElementById('discordApp') };
+    const showScreen = (screenName) => {
+        Object.values(screens).forEach(s => s.classList.add('hidden'));
+        const screenToShow = screens[screenName];
+        if (screenToShow) {
+            screenToShow.classList.remove('hidden');
+            if (['login', 'setup', 'recovery'].includes(screenName)) { screens.auth.classList.remove('hidden'); }
+        }
+    };
+    
+    // --- GLOBAL STATE & UTILITIES ---
+    const vaultStorageKey = 'masterDashboardData';
+    let activePassword = '';
+    let passwordEntries = [];
+    const securityQuestions = [ "What was the name of your first pet?", "What is your mother's maiden name?", "What was the name of your elementary school?", "In what city were you born?", "What is your favorite movie?", "What was the make of your first car?" ];
+    const encrypt = (text, key) => CryptoJS.AES.encrypt(text, key).toString();
+    const decrypt = (ciphertext, key) => CryptoJS.AES.decrypt(ciphertext, key).toString(CryptoJS.enc.Utf8);
+    const hash = (text) => CryptoJS.SHA256(text).toString();
+
+    // --- SETUP & LOGIN LOGIC ---
+    const populateSecurityQuestions = () => {
+        const q1Select = document.getElementById('q1'), q2Select = document.getElementById('q2');
+        securityQuestions.forEach(q => { q1Select.innerHTML += `<option value="${q}">${q}</option>`; q2Select.innerHTML += `<option value="${q}">${q}</option>`; });
+        q1Select.selectedIndex = 0; q2Select.selectedIndex = 1;
+    };
+    document.getElementById('setupForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const username = document.getElementById('setupUsername').value.trim(); const password = document.getElementById('setupPassword').value;
+        const q1 = document.getElementById('q1').value, a1 = document.getElementById('a1').value.trim(); const q2 = document.getElementById('q2').value, a2 = document.getElementById('a2').value.trim();
+        if (!username || !password || !a1 || !a2 || q1 === q2) return;
+        const vaultData = { username, encryptedData: encrypt(JSON.stringify([]), password), security: { q1, q2, answersHash: hash(a1 + a2) } };
+        localStorage.setItem(vaultStorageKey, JSON.stringify(vaultData));
+        activePassword = password; showScreen('dashboard');
+    });
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const username = document.getElementById('loginUsername').value.trim(); const password = document.getElementById('loginPassword').value;
+        const vaultData = JSON.parse(localStorage.getItem(vaultStorageKey));
+        if (vaultData && vaultData.username.toLowerCase() === username.toLowerCase()) {
+            try {
+                const decrypted = decrypt(vaultData.encryptedData, password); if (!decrypted) throw new Error();
+                activePassword = password; passwordEntries = JSON.parse(decrypted);
+                renderPasswords(); showScreen('dashboard');
+                document.getElementById('loginError').style.display = 'none'; document.getElementById('loginForm').reset();
+            } catch (err) { document.getElementById('loginError').style.display = 'block'; }
+        } else { document.getElementById('loginError').style.display = 'block'; }
+    });
+    document.getElementById('forgotPasswordLink').addEventListener('click', () => {
+        const vaultData = JSON.parse(localStorage.getItem(vaultStorageKey)); if (!vaultData) { alert("No account found. Please set up a new account."); return; }
+        document.getElementById('recoveryQ1').textContent = vaultData.security.q1; document.getElementById('recoveryQ2').textContent = vaultData.security.q2;
+        showScreen('recovery');
+    });
+    document.getElementById('recoveryForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const a1 = document.getElementById('recoveryA1').value.trim(); const a2 = document.getElementById('recoveryA2').value.trim();
+        const vaultData = JSON.parse(localStorage.getItem(vaultStorageKey));
+        if (hash(a1 + a2) === vaultData.security.answersHash) {
+            const newPassword = prompt("Verification successful! Please enter your new password (at least 6 characters). WARNING: This will reset your password but will ERASE all saved passwords in your vault.");
+            if (newPassword && newPassword.length >= 6) {
+                vaultData.encryptedData = encrypt(JSON.stringify([]), newPassword);
+                localStorage.setItem(vaultStorageKey, JSON.stringify(vaultData));
+                alert("Password has been reset. Your vault is now empty. Please log in with your new password."); showScreen('login');
+            } else if (newPassword !== null) { alert("Password must be at least 6 characters long."); }
+        } else { document.getElementById('recoveryError').style.display = 'block'; }
+    });
+    document.getElementById('backToLoginLink').addEventListener('click', () => showScreen('login'));
+    
+    // --- DASHBOARD NAVIGATION & LOGOUT ---
+    document.getElementById('selectVault').addEventListener('click', () => showScreen('vault'));
+    document.getElementById('selectDiscord').addEventListener('click', () => showScreen('discord'));
+    document.querySelectorAll('.back-to-dashboard-btn').forEach(btn => btn.addEventListener('click', () => showScreen('dashboard')));
+    function handleLogout() { activePassword = ''; passwordEntries = []; showScreen('login'); }
+    document.getElementById('mainLogoutBtn').addEventListener('click', handleLogout); document.getElementById('vaultLogoutBtn').addEventListener('click', handleLogout);
+
+    // === PASSWORD VAULT SCRIPT ===
+    const pv = { addPasswordBtn: document.getElementById('addPasswordBtn'), passwordModal: document.getElementById('passwordModal'), searchInput: document.getElementById('searchInput'), passwordList: document.getElementById('passwordList'), passwordForm: document.getElementById('passwordForm'), modalTitle: document.getElementById('modalTitle'), passwordIdInput: document.getElementById('passwordId'), exportVaultBtn: document.getElementById('exportVaultBtn'), importVaultBtn: document.getElementById('importVaultBtn'), importVaultInput: document.getElementById('importVaultInput') };
+    const savePasswordsToStorage = () => { const vaultData = JSON.parse(localStorage.getItem(vaultStorageKey)); vaultData.encryptedData = encrypt(JSON.stringify(passwordEntries), activePassword); localStorage.setItem(vaultStorageKey, JSON.stringify(vaultData)); };
+    const renderPasswords = (filter = '') => {
+        pv.passwordList.innerHTML = '';
+        const filtered = passwordEntries.filter(p => p.name.toLowerCase().includes(filter.toLowerCase()) || p.username.toLowerCase().includes(filter.toLowerCase()));
+        if (filtered.length === 0) { pv.passwordList.innerHTML = `<li class="password-item" style="justify-content:center;">${passwordEntries.length === 0 ? 'Your vault is empty.' : 'No results found.'}</li>`; }
+        filtered.forEach(p => {
+            const li = document.createElement('li'); li.className = 'password-item'; li.dataset.id = p.id;
+            li.innerHTML = `<div><h3 style="color: var(--accent-color1);">${p.name}</h3><p style="font-family: monospace; color: #a0a0a0;">User: ${p.username}</p><p class="password-text-display" style="font-family: monospace; color: #a0a0a0;">Pass: ••••••••</p></div><div class="actions" style="display: flex; gap: 0.5rem;"><button class="view-pass-btn" title="Show/Hide Password"><i class="fas fa-eye"></i></button><button class="copy-pass-btn" title="Copy Password"><i class="fas fa-copy"></i></button><button class="edit-btn" title="Edit Entry"><i class="fas fa-pencil-alt"></i></button><button class="delete-btn" title="Delete Entry"><i class="fas fa-trash"></i></button></div>`;
+            pv.passwordList.appendChild(li);
+        });
+    };
+    pv.addPasswordBtn.addEventListener('click', () => { pv.passwordForm.reset(); pv.passwordIdInput.value = ''; pv.modalTitle.textContent = 'Add New Entry'; pv.passwordModal.classList.remove('hidden'); });
+    pv.passwordModal.querySelector('.close-btn').addEventListener('click', () => pv.passwordModal.classList.add('hidden'));
+    pv.passwordForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const entry = { id: pv.passwordIdInput.value || Date.now().toString(), name: document.getElementById('websiteName').value, username: document.getElementById('entryUsername').value, password: document.getElementById('entryPassword').value };
+        const existingIndex = passwordEntries.findIndex(p => p.id === entry.id);
+        if (existingIndex > -1) { passwordEntries[existingIndex] = entry; } else { passwordEntries.push(entry); }
+        savePasswordsToStorage(); renderPasswords(pv.searchInput.value); pv.passwordModal.classList.add('hidden');
+    });
+    pv.passwordList.addEventListener('click', (e) => {
+        const button = e.target.closest('button'); if (!button) return;
+        const li = button.closest('.password-item'); const id = li.dataset.id; const entry = passwordEntries.find(p => p.id === id);
+        if (button.classList.contains('delete-btn')) { if (confirm(`Delete ${entry.name}?`)) { passwordEntries = passwordEntries.filter(p => p.id !== id); savePasswordsToStorage(); renderPasswords(pv.searchInput.value); } }
+        else if (button.classList.contains('edit-btn')) { pv.modalTitle.textContent = 'Edit Entry'; pv.passwordIdInput.value = entry.id; document.getElementById('websiteName').value = entry.name; document.getElementById('entryUsername').value = entry.username; document.getElementById('entryPassword').value = entry.password; pv.passwordModal.classList.remove('hidden'); }
+        else if (button.classList.contains('copy-pass-btn')) { navigator.clipboard.writeText(entry.password).then(() => { const originalText = button.innerHTML; button.innerHTML = '<i class="fas fa-check"></i>'; setTimeout(() => { button.innerHTML = originalText; }, 1500); }); }
+        else if (button.classList.contains('view-pass-btn')) { const passEl = li.querySelector('.password-text-display'); const icon = button.querySelector('i'); if (passEl.textContent.includes('•')) { passEl.textContent = `Pass: ${entry.password}`; icon.className = 'fas fa-eye-slash'; } else { passEl.textContent = 'Pass: ••••••••'; icon.className = 'fas fa-eye'; } }
+    });
+    pv.searchInput.addEventListener('input', () => renderPasswords(pv.searchInput.value));
+    // Backup & Restore Logic
+    pv.exportVaultBtn.addEventListener('click', () => {
+        const vaultDataString = localStorage.getItem(vaultStorageKey);
+        if(!vaultDataString) { alert("No data to export."); return; }
+        const blob = new Blob([vaultDataString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const today = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `cyber_vault_backup_${today}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+    pv.importVaultBtn.addEventListener('click', () => pv.importVaultInput.click());
+    pv.importVaultInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        if (!confirm("This will overwrite your current vault with the data from this file. Are you sure you want to continue?")) {
+            event.target.value = ''; // Reset file input
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const importedData = e.target.result;
+                JSON.parse(importedData); // Validate that it's a valid JSON
+                localStorage.setItem(vaultStorageKey, importedData);
+                alert("Vault imported successfully! Please log out and log back in to see your restored data.");
+                handleLogout();
+            } catch (err) {
+                alert("Invalid or corrupted backup file.");
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = ''; // Reset file input
+    });
+
+    // === DISCORD WEBHOOK SCRIPT ===
+    const dw = { webhookUrlInput: document.getElementById('webhookUrl'), messageContentInput: document.getElementById('messageContent'), usernameInput: document.getElementById('username'), avatarUrlInput: document.getElementById('avatarUrl'), sendMessageBtn: document.getElementById('sendMessageBtn'), clearFormBtn: document.getElementById('clearFormBtn'), statusMessage: document.getElementById('statusMessage'), spinner: document.getElementById('spinner') };
+    if (localStorage.getItem('discordWebhookUrl')) { dw.webhookUrlInput.value = localStorage.getItem('discordWebhookUrl'); }
+    const showStatus = (message, isError = false) => { dw.statusMessage.textContent = message; dw.statusMessage.className = `p-4 rounded-lg text-sm text-center ${isError ? 'bg-red-500/20 text-red-300' : 'bg-green-500/20 text-green-300'}`; };
+    const setLoading = (isLoading) => { dw.sendMessageBtn.disabled = isLoading; dw.spinner.classList.toggle('hidden', !isLoading); };
+    dw.sendMessageBtn.addEventListener('click', async () => {
+        const webhookUrl = dw.webhookUrlInput.value.trim(); const content = dw.messageContentInput.value.trim();
+        if (!webhookUrl || !content) { showStatus('Webhook URL and Message are required.', true); return; }
+        localStorage.setItem('discordWebhookUrl', webhookUrl);
+        const payload = { content, username: dw.usernameInput.value.trim() || undefined, avatar_url: dw.avatarUrlInput.value.trim() || undefined };
+        setLoading(true);
+        try {
+            const response = await fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (response.ok) { showStatus('Message sent successfully!', false); dw.messageContentInput.value = ''; }
+            else { const errorData = await response.json(); showStatus(`Failed to send: ${errorData.message || 'Unknown error'}`, true); }
+        } catch (error) { showStatus('An error occurred. Check the console.', true); }
+        finally { setLoading(false); }
+    });
+    dw.clearFormBtn.addEventListener('click', () => { dw.messageContentInput.value = ''; dw.usernameInput.value = ''; dw.avatarUrlInput.value = ''; dw.statusMessage.classList.add('hidden'); });
+
+    // --- INITIALIZATION ---
+    const init = () => { if (localStorage.getItem(vaultStorageKey)) { showScreen('login'); } else { populateSecurityQuestions(); showScreen('setup'); } };
+    init();
+});
+</script>
+</body>
+</html>
