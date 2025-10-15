@@ -147,8 +147,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURATION ---
-    const GOOGLE_CLIENT_ID = '419426378293-661bn0b9il4bvk6k3tdr30tdhbhko0tj.apps.googleusercontent.com'; // User's Client ID Added
-    const GOOGLE_API_KEY = 'YOUR_API_KEY_GOES_HERE'; // <-- IMPORTANT: PASTE YOUR API KEY HERE
+    const GOOGLE_CLIENT_ID = 'YOUR_CLIENT_ID_GOES_HERE'; // <-- PASTE YOUR CLIENT ID HERE
     const DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file';
     
     // --- SCREEN MANAGEMENT & GLOBAL STATE ---
@@ -170,15 +169,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const driveStatus = document.getElementById('driveStatus');
 
     function gapiLoaded() { gapi.load('client', initializeGapiClient); }
-    async function initializeGapiClient() { 
-        // We add the API Key here
-        if (GOOGLE_API_KEY && GOOGLE_API_KEY !== 'YOUR_API_KEY_GOES_HERE') {
-            await gapi.client.init({ apiKey: GOOGLE_API_KEY, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] }); 
-        } else {
-            await gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] }); 
-        }
-    }
+    async function initializeGapiClient() { await gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] }); }
     function gisLoaded() {
+        if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === 'YOUR_CLIENT_ID_GOES_HERE') { driveStatus.innerHTML = `<i class="fas fa-exclamation-triangle" style="color: #e74c3c;"></i> Google Client ID is not set.`; return; }
         tokenClient = google.accounts.oauth2.initTokenClient({ client_id: GOOGLE_CLIENT_ID, scope: DRIVE_SCOPES, callback: handleGoogleAuthResponse });
         driveAuthBtn.disabled = false;
         driveStatus.innerHTML = `<i class="fas fa-times-circle" style="color: #e74c3c;"></i> Disconnected`;
@@ -226,6 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- SETUP, LOGIN, RECOVERY, NAVIGATION, and OTHER APP LOGIC ---
+    // This logic is identical to the previous version and is included here for completeness.
     const populateSecurityQuestions = () => { const q1 = document.getElementById('q1'), q2 = document.getElementById('q2'); securityQuestions.forEach(q => { q1.innerHTML += `<option value="${q}">${q}</option>`; q2.innerHTML += `<option value="${q}">${q}</option>`; }); q1.selectedIndex = 0; q2.selectedIndex = 1; };
     document.getElementById('setupForm').addEventListener('submit', (e) => { e.preventDefault(); const u = document.getElementById('setupUsername').value.trim(), p = document.getElementById('setupPassword').value, q1 = document.getElementById('q1').value, a1 = document.getElementById('a1').value.trim(), q2 = document.getElementById('q2').value, a2 = document.getElementById('a2').value.trim(); if (!u || !p || !a1 || !a2 || q1 === q2) return; const d = { username: u, encryptedData: encrypt(JSON.stringify([]), p), security: { q1, q2, answersHash: hash(a1 + a2) } }; localStorage.setItem(vaultStorageKey, JSON.stringify(d)); activePassword = p; showScreen('dashboard'); });
     document.getElementById('loginForm').addEventListener('submit', (e) => { e.preventDefault(); const u = document.getElementById('loginUsername').value.trim(), p = document.getElementById('loginPassword').value, d = JSON.parse(localStorage.getItem(vaultStorageKey)); if (d && d.username.toLowerCase() === u.toLowerCase()) { try { const dec = decrypt(d.encryptedData, p); if (!dec) throw new Error(); activePassword = p; passwordEntries = JSON.parse(dec); renderPasswords(); showScreen('dashboard'); document.getElementById('loginError').style.display = 'none'; e.target.reset(); } catch (err) { document.getElementById('loginError').style.display = 'block'; } } else { document.getElementById('loginError').style.display = 'block'; } });
