@@ -66,6 +66,19 @@
         #vaultApp .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         #vaultApp .modal-content { background: var(--secondary-bg); padding: 2rem; border-radius: 16px; border: 1px solid var(--border-color); width: 90%; max-width: 500px; position: relative; }
         #vaultApp .modal .close-btn { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: #a0a0a0; font-size: 1.5rem; cursor: pointer; }
+        #vaultApp .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        #vaultApp .stat-card { background: rgba(10, 10, 28, 0.8); border: 1px solid var(--border-color); border-radius: 12px; padding: 1rem; }
+        #vaultApp .stat-card h3 { font-size: 0.9rem; color: #9ca3af; margin-bottom: 0.35rem; }
+        #vaultApp .stat-card p { font-size: 1.4rem; font-weight: 600; color: var(--accent-color1); }
+        #vaultApp .badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; border: 1px solid var(--border-color); color: #cbd5f5; margin-top: 0.35rem; }
+        #vaultApp .meta-text { font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem; }
+        #vaultApp .strength-meter { height: 8px; border-radius: 999px; background: #1f2937; overflow: hidden; border: 1px solid var(--border-color); }
+        #vaultApp .strength-meter span { display: block; height: 100%; width: 0%; background: var(--accent-color1); transition: width 0.2s ease; }
+        #vaultApp .strength-label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-top: 0.5rem; color: #9ca3af; }
+        #vaultApp .generator-panel { background: rgba(10, 10, 28, 0.7); border: 1px solid var(--border-color); border-radius: 12px; padding: 1rem; margin-top: 1rem; }
+        #vaultApp .toggle-switch { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: #cbd5f5; }
+        #vaultApp .toggle-switch input { accent-color: var(--accent-color1); }
+        #vaultApp .file-input { display: none; }
         
         #discordApp { font-family: 'Inter', sans-serif; }
     </style>
@@ -110,8 +123,75 @@
             <button id="driveBackupBtn" class="btn-generic btn-secondary" disabled><i class="fas fa-upload"></i>Backup to Drive</button>
             <button id="driveRestoreBtn" class="btn-generic btn-secondary" disabled><i class="fas fa-download"></i>Restore from Drive</button>
         </div>
+        <div class="controls">
+            <span style="display:flex; align-items:center; gap: 0.5rem; color: #a0a0a0;"><i class="fas fa-archive"></i> Local Vault</span>
+            <button id="exportVaultBtn" class="btn-generic btn-secondary"><i class="fas fa-file-export"></i>Export</button>
+            <button id="importVaultBtn" class="btn-generic btn-secondary"><i class="fas fa-file-import"></i>Import</button>
+            <input id="importVaultInput" type="file" accept="application/json" class="file-input">
+        </div>
+        <div class="stats-grid" id="vaultStats">
+            <div class="stat-card"><h3>Total Entries</h3><p id="statTotal">0</p></div>
+            <div class="stat-card"><h3>Weak Passwords</h3><p id="statWeak">0</p></div>
+            <div class="stat-card"><h3>Reused Passwords</h3><p id="statReused">0</p></div>
+        </div>
         <ul id="passwordList" class="password-list"></ul>
-        <div id="passwordModal" class="modal hidden"><div class="modal-content"><button class="close-btn">&times;</button><h2 id="modalTitle" style="text-align:center; margin-bottom: 1.5rem;">Add New Entry</h2><form id="passwordForm"><input type="hidden" id="passwordId"><div class="form-group"><label for="websiteName">Website Name</label><input type="text" id="websiteName" required></div><div class="form-group"><label for="entryUsername">Username / Email</label><input type="text" id="entryUsername" required></div><div class="form-group"><label for="entryPassword">Password</label><input type="password" id="entryPassword" required></div><button type="submit" class="btn-submit">Save Entry</button></form></div></div>
+        <div id="passwordModal" class="modal hidden">
+            <div class="modal-content">
+                <button class="close-btn">&times;</button>
+                <h2 id="modalTitle" style="text-align:center; margin-bottom: 1.5rem;">Add New Entry</h2>
+                <form id="passwordForm">
+                    <input type="hidden" id="passwordId">
+                    <div class="form-group">
+                        <label for="websiteName">Website Name</label>
+                        <input type="text" id="websiteName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="entryUsername">Username / Email</label>
+                        <input type="text" id="entryUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="entryPassword">Password</label>
+                        <input type="password" id="entryPassword" required>
+                        <div class="strength-meter" style="margin-top: 0.75rem;"><span id="strengthBar"></span></div>
+                        <div class="strength-label">
+                            <span>Password strength</span>
+                            <span id="strengthLabel">Waiting...</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="entryCategory">Category</label>
+                        <select id="entryCategory">
+                            <option value="Personal">Personal</option>
+                            <option value="Work">Work</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Social">Social</option>
+                            <option value="Development">Development</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="entryNotes">Notes</label>
+                        <input type="text" id="entryNotes" placeholder="e.g. 2FA enabled, recovery email updated">
+                    </div>
+                    <div class="generator-panel">
+                        <div class="flex items-center justify-between" style="margin-bottom: 0.75rem;">
+                            <h3 style="font-weight: 600;">Strong Password Generator</h3>
+                            <button type="button" id="generatePasswordBtn" class="btn-generic btn-secondary" style="height: 36px;">Generate</button>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0.75rem;">
+                            <label for="passwordLength">Length: <span id="passwordLengthValue">16</span></label>
+                            <input type="range" id="passwordLength" min="12" max="32" value="16">
+                        </div>
+                        <div class="flex flex-wrap gap-4">
+                            <label class="toggle-switch"><input type="checkbox" id="useUppercase" checked>Uppercase</label>
+                            <label class="toggle-switch"><input type="checkbox" id="useLowercase" checked>Lowercase</label>
+                            <label class="toggle-switch"><input type="checkbox" id="useNumbers" checked>Numbers</label>
+                            <label class="toggle-switch"><input type="checkbox" id="useSymbols" checked>Symbols</label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-submit" style="margin-top: 1.5rem;">Save Entry</button>
+                </form>
+            </div>
+        </div>
     </div>
     
     <div id="discordApp" class="hidden">
@@ -221,8 +301,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- SETUP, LOGIN, RECOVERY, NAVIGATION, and OTHER APP LOGIC ---
     // This logic is identical to the previous version and is included here for completeness.
     const populateSecurityQuestions = () => { const q1 = document.getElementById('q1'), q2 = document.getElementById('q2'); securityQuestions.forEach(q => { q1.innerHTML += `<option value="${q}">${q}</option>`; q2.innerHTML += `<option value="${q}">${q}</option>`; }); q1.selectedIndex = 0; q2.selectedIndex = 1; };
-    document.getElementById('setupForm').addEventListener('submit', (e) => { e.preventDefault(); const u = document.getElementById('setupUsername').value.trim(), p = document.getElementById('setupPassword').value, q1 = document.getElementById('q1').value, a1 = document.getElementById('a1').value.trim(), q2 = document.getElementById('q2').value, a2 = document.getElementById('a2').value.trim(); if (!u || !p || !a1 || !a2 || q1 === q2) return; const d = { username: u, encryptedData: encrypt(JSON.stringify([]), p), security: { q1, q2, answersHash: hash(a1 + a2) } }; localStorage.setItem(vaultStorageKey, JSON.stringify(d)); activePassword = p; showScreen('dashboard'); });
-    document.getElementById('loginForm').addEventListener('submit', (e) => { e.preventDefault(); const u = document.getElementById('loginUsername').value.trim(), p = document.getElementById('loginPassword').value, d = JSON.parse(localStorage.getItem(vaultStorageKey)); if (d && d.username.toLowerCase() === u.toLowerCase()) { try { const dec = decrypt(d.encryptedData, p); if (!dec) throw new Error(); activePassword = p; passwordEntries = JSON.parse(dec); renderPasswords(); showScreen('dashboard'); document.getElementById('loginError').style.display = 'none'; e.target.reset(); } catch (err) { document.getElementById('loginError').style.display = 'block'; } } else { document.getElementById('loginError').style.display = 'block'; } });
+    document.getElementById('setupForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const u = document.getElementById('setupUsername').value.trim(), p = document.getElementById('setupPassword').value, q1 = document.getElementById('q1').value, a1 = document.getElementById('a1').value.trim(), q2 = document.getElementById('q2').value, a2 = document.getElementById('a2').value.trim();
+        if (!u || !p || !a1 || !a2 || q1 === q2) return;
+        const d = { username: u, encryptedData: encrypt(JSON.stringify([]), p), security: { q1, q2, answersHash: hash(a1 + a2) } };
+        localStorage.setItem(vaultStorageKey, JSON.stringify(d));
+        activePassword = p;
+        passwordEntries = [];
+        renderPasswords();
+        showScreen('dashboard');
+    });
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const u = document.getElementById('loginUsername').value.trim(), p = document.getElementById('loginPassword').value, d = JSON.parse(localStorage.getItem(vaultStorageKey));
+        if (d && d.username.toLowerCase() === u.toLowerCase()) {
+            try {
+                const dec = decrypt(d.encryptedData, p);
+                if (!dec) throw new Error();
+                activePassword = p;
+                passwordEntries = JSON.parse(dec).map(normalizeEntry);
+                renderPasswords();
+                showScreen('dashboard');
+                document.getElementById('loginError').style.display = 'none';
+                e.target.reset();
+            } catch (err) { document.getElementById('loginError').style.display = 'block'; }
+        } else { document.getElementById('loginError').style.display = 'block'; }
+    });
     document.getElementById('forgotPasswordLink').addEventListener('click', () => { const d = JSON.parse(localStorage.getItem(vaultStorageKey)); if (!d) { alert("No account found."); return; } document.getElementById('recoveryQ1').textContent = d.security.q1; document.getElementById('recoveryQ2').textContent = d.security.q2; showScreen('recovery'); });
     document.getElementById('recoveryForm').addEventListener('submit', (e) => { e.preventDefault(); const a1 = document.getElementById('recoveryA1').value.trim(), a2 = document.getElementById('recoveryA2').value.trim(), d = JSON.parse(localStorage.getItem(vaultStorageKey)); if (hash(a1 + a2) === d.security.answersHash) { const nP = prompt("OK! New password (min 6 chars). WARNING: This resets your password but ERASEs saved entries."); if (nP && nP.length >= 6) { d.encryptedData = encrypt(JSON.stringify([]), nP); localStorage.setItem(vaultStorageKey, JSON.stringify(d)); alert("Password reset. Vault is empty. Please log in."); showScreen('login'); } else if (nP !== null) { alert("Password too short."); } } else { document.getElementById('recoveryError').style.display = 'block'; } });
     document.getElementById('backToLoginLink').addEventListener('click', () => showScreen('login'));
@@ -231,21 +336,233 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.back-to-dashboard-btn').forEach(btn => btn.addEventListener('click', () => showScreen('dashboard')));
     function handleLogout() { activePassword = ''; passwordEntries = []; showScreen('login'); }
     document.getElementById('mainLogoutBtn').addEventListener('click', handleLogout); document.getElementById('vaultLogoutBtn').addEventListener('click', handleLogout);
-    const pv = { addPasswordBtn: document.getElementById('addPasswordBtn'), passwordModal: document.getElementById('passwordModal'), searchInput: document.getElementById('searchInput'), passwordList: document.getElementById('passwordList'), passwordForm: document.getElementById('passwordForm'), modalTitle: document.getElementById('modalTitle'), passwordIdInput: document.getElementById('passwordId') };
+    const pv = {
+        addPasswordBtn: document.getElementById('addPasswordBtn'),
+        passwordModal: document.getElementById('passwordModal'),
+        searchInput: document.getElementById('searchInput'),
+        passwordList: document.getElementById('passwordList'),
+        passwordForm: document.getElementById('passwordForm'),
+        modalTitle: document.getElementById('modalTitle'),
+        passwordIdInput: document.getElementById('passwordId'),
+        entryPasswordInput: document.getElementById('entryPassword'),
+        entryCategoryInput: document.getElementById('entryCategory'),
+        entryNotesInput: document.getElementById('entryNotes'),
+        strengthBar: document.getElementById('strengthBar'),
+        strengthLabel: document.getElementById('strengthLabel'),
+        statTotal: document.getElementById('statTotal'),
+        statWeak: document.getElementById('statWeak'),
+        statReused: document.getElementById('statReused'),
+        exportVaultBtn: document.getElementById('exportVaultBtn'),
+        importVaultBtn: document.getElementById('importVaultBtn'),
+        importVaultInput: document.getElementById('importVaultInput'),
+        generatePasswordBtn: document.getElementById('generatePasswordBtn'),
+        passwordLength: document.getElementById('passwordLength'),
+        passwordLengthValue: document.getElementById('passwordLengthValue'),
+        useUppercase: document.getElementById('useUppercase'),
+        useLowercase: document.getElementById('useLowercase'),
+        useNumbers: document.getElementById('useNumbers'),
+        useSymbols: document.getElementById('useSymbols')
+    };
     const savePasswordsToStorage = () => { const d = JSON.parse(localStorage.getItem(vaultStorageKey)); d.encryptedData = encrypt(JSON.stringify(passwordEntries), activePassword); localStorage.setItem(vaultStorageKey, JSON.stringify(d)); };
-    const renderPasswords = (f = '') => { pv.passwordList.innerHTML = ''; const filt = passwordEntries.filter(p => p.name.toLowerCase().includes(f.toLowerCase()) || p.username.toLowerCase().includes(f.toLowerCase())); if (filt.length === 0) { pv.passwordList.innerHTML = `<li class="password-item" style="justify-content:center;">${passwordEntries.length === 0 ? 'Vault is empty.' : 'No results.'}</li>`; } filt.forEach(p => { const li = document.createElement('li'); li.className = 'password-item'; li.dataset.id = p.id; li.innerHTML = `<div><h3 style="color: var(--accent-color1);">${p.name}</h3><p style="font-family: monospace; color: #a0a0a0;">User: ${p.username}</p><p class="password-text-display" style="font-family: monospace; color: #a0a0a0;">Pass: ••••••••</p></div><div class="actions" style="display: flex; gap: 0.5rem;"><button class="view-pass-btn" title="Show/Hide"><i class="fas fa-eye"></i></button><button class="copy-pass-btn" title="Copy Pass"><i class="fas fa-copy"></i></button><button class="edit-btn" title="Edit"><i class="fas fa-pencil-alt"></i></button><button class="delete-btn" title="Delete"><i class="fas fa-trash"></i></button></div>`; pv.passwordList.appendChild(li); }); };
-    pv.addPasswordBtn.addEventListener('click', () => { pv.passwordForm.reset(); pv.passwordIdInput.value = ''; pv.modalTitle.textContent = 'Add New Entry'; pv.passwordModal.classList.remove('hidden'); });
+    const normalizeEntry = (entry) => ({
+        id: entry.id,
+        name: entry.name,
+        username: entry.username,
+        password: entry.password,
+        category: entry.category || 'Personal',
+        notes: entry.notes || '',
+        updatedAt: entry.updatedAt || entry.createdAt || Date.now()
+    });
+    const calculateStrength = (password) => {
+        let score = 0;
+        if (password.length >= 12) score += 1;
+        if (password.length >= 16) score += 1;
+        if (/[A-Z]/.test(password)) score += 1;
+        if (/[a-z]/.test(password)) score += 1;
+        if (/\d/.test(password)) score += 1;
+        if (/[^A-Za-z0-9]/.test(password)) score += 1;
+        const percent = Math.min(100, Math.round((score / 6) * 100));
+        let label = 'Weak';
+        if (score >= 5) label = 'Very strong';
+        else if (score >= 4) label = 'Strong';
+        else if (score >= 3) label = 'Fair';
+        return { score, percent, label };
+    };
+    const updateStrengthUI = (password) => {
+        const strength = calculateStrength(password);
+        pv.strengthBar.style.width = `${strength.percent}%`;
+        pv.strengthBar.style.background = strength.score >= 5 ? '#22c55e' : strength.score >= 3 ? '#f59e0b' : '#ef4444';
+        pv.strengthLabel.textContent = strength.label;
+    };
+    const updateStats = () => {
+        pv.statTotal.textContent = passwordEntries.length;
+        const weakCount = passwordEntries.filter((entry) => calculateStrength(entry.password).score <= 2).length;
+        const passwordMap = passwordEntries.reduce((acc, entry) => { acc[entry.password] = (acc[entry.password] || 0) + 1; return acc; }, {});
+        const reusedCount = Object.values(passwordMap).filter(count => count > 1).reduce((sum, count) => sum + count, 0);
+        pv.statWeak.textContent = weakCount;
+        pv.statReused.textContent = reusedCount;
+    };
+    const renderPasswords = (f = '') => {
+        pv.passwordList.innerHTML = '';
+        const filt = passwordEntries.filter(p => p.name.toLowerCase().includes(f.toLowerCase()) || p.username.toLowerCase().includes(f.toLowerCase()));
+        if (filt.length === 0) {
+            pv.passwordList.innerHTML = `<li class="password-item" style="justify-content:center;">${passwordEntries.length === 0 ? 'Vault is empty.' : 'No results.'}</li>`;
+        }
+        filt.forEach(p => {
+            const li = document.createElement('li');
+            li.className = 'password-item';
+            li.dataset.id = p.id;
+            const updatedDate = new Date(p.updatedAt);
+            li.innerHTML = `
+                <div>
+                    <h3 style="color: var(--accent-color1);">${p.name}</h3>
+                    <p style="font-family: monospace; color: #a0a0a0;">User: ${p.username}</p>
+                    <p class="password-text-display" style="font-family: monospace; color: #a0a0a0;">Pass: ••••••••</p>
+                    <span class="badge"><i class="fas fa-tag"></i>${p.category}</span>
+                    ${p.notes ? `<div class="meta-text">${p.notes}</div>` : ''}
+                    <div class="meta-text">Updated ${updatedDate.toLocaleDateString()} • ${updatedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+                <div class="actions" style="display: flex; gap: 0.5rem;">
+                    <button class="view-pass-btn" title="Show/Hide"><i class="fas fa-eye"></i></button>
+                    <button class="copy-pass-btn" title="Copy Pass"><i class="fas fa-copy"></i></button>
+                    <button class="edit-btn" title="Edit"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="delete-btn" title="Delete"><i class="fas fa-trash"></i></button>
+                </div>`;
+            pv.passwordList.appendChild(li);
+        });
+        updateStats();
+    };
+    pv.addPasswordBtn.addEventListener('click', () => {
+        pv.passwordForm.reset();
+        pv.passwordIdInput.value = '';
+        pv.entryCategoryInput.value = 'Personal';
+        pv.entryNotesInput.value = '';
+        pv.modalTitle.textContent = 'Add New Entry';
+        updateStrengthUI('');
+        pv.passwordModal.classList.remove('hidden');
+    });
     pv.passwordModal.querySelector('.close-btn').addEventListener('click', () => pv.passwordModal.classList.add('hidden'));
-    pv.passwordForm.addEventListener('submit', (e) => { e.preventDefault(); const entry = { id: pv.passwordIdInput.value || Date.now().toString(), name: document.getElementById('websiteName').value, username: document.getElementById('entryUsername').value, password: document.getElementById('entryPassword').value }; const idx = passwordEntries.findIndex(p => p.id === entry.id); if (idx > -1) { passwordEntries[idx] = entry; } else { passwordEntries.push(entry); } savePasswordsToStorage(); renderPasswords(pv.searchInput.value); pv.passwordModal.classList.add('hidden'); });
-    pv.passwordList.addEventListener('click', (e) => { const btn = e.target.closest('button'); if (!btn) return; const li = btn.closest('.password-item'), id = li.dataset.id, entry = passwordEntries.find(p => p.id === id); if (btn.classList.contains('delete-btn')) { if (confirm(`Delete ${entry.name}?`)) { passwordEntries = passwordEntries.filter(p => p.id !== id); savePasswordsToStorage(); renderPasswords(pv.searchInput.value); } } else if (btn.classList.contains('edit-btn')) { pv.modalTitle.textContent = 'Edit Entry'; pv.passwordIdInput.value = entry.id; document.getElementById('websiteName').value = entry.name; document.getElementById('entryUsername').value = entry.username; document.getElementById('entryPassword').value = entry.password; pv.passwordModal.classList.remove('hidden'); } else if (btn.classList.contains('copy-pass-btn')) { navigator.clipboard.writeText(entry.password).then(() => { const i = btn.innerHTML; btn.innerHTML = '<i class="fas fa-check"></i>'; setTimeout(() => { btn.innerHTML = i; }, 1500); }); } else if (btn.classList.contains('view-pass-btn')) { const pEl = li.querySelector('.password-text-display'), icon = btn.querySelector('i'); if (pEl.textContent.includes('•')) { pEl.textContent = `Pass: ${entry.password}`; icon.className = 'fas fa-eye-slash'; } else { pEl.textContent = 'Pass: ••••••••'; icon.className = 'fas fa-eye'; } } });
+    pv.passwordForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const entry = normalizeEntry({
+            id: pv.passwordIdInput.value || Date.now().toString(),
+            name: document.getElementById('websiteName').value,
+            username: document.getElementById('entryUsername').value,
+            password: pv.entryPasswordInput.value,
+            category: pv.entryCategoryInput.value,
+            notes: pv.entryNotesInput.value,
+            updatedAt: Date.now()
+        });
+        const idx = passwordEntries.findIndex(p => p.id === entry.id);
+        if (idx > -1) { passwordEntries[idx] = entry; }
+        else { passwordEntries.push(entry); }
+        savePasswordsToStorage();
+        renderPasswords(pv.searchInput.value);
+        pv.passwordModal.classList.add('hidden');
+    });
+    pv.passwordList.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const li = btn.closest('.password-item'), id = li.dataset.id, entry = passwordEntries.find(p => p.id === id);
+        if (btn.classList.contains('delete-btn')) {
+            if (confirm(`Delete ${entry.name}?`)) {
+                passwordEntries = passwordEntries.filter(p => p.id !== id);
+                savePasswordsToStorage();
+                renderPasswords(pv.searchInput.value);
+            }
+        } else if (btn.classList.contains('edit-btn')) {
+            pv.modalTitle.textContent = 'Edit Entry';
+            pv.passwordIdInput.value = entry.id;
+            document.getElementById('websiteName').value = entry.name;
+            document.getElementById('entryUsername').value = entry.username;
+            pv.entryPasswordInput.value = entry.password;
+            pv.entryCategoryInput.value = entry.category || 'Personal';
+            pv.entryNotesInput.value = entry.notes || '';
+            updateStrengthUI(entry.password);
+            pv.passwordModal.classList.remove('hidden');
+        } else if (btn.classList.contains('copy-pass-btn')) {
+            navigator.clipboard.writeText(entry.password).then(() => {
+                const i = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => { btn.innerHTML = i; }, 1500);
+            });
+        } else if (btn.classList.contains('view-pass-btn')) {
+            const pEl = li.querySelector('.password-text-display'), icon = btn.querySelector('i');
+            if (pEl.textContent.includes('•')) { pEl.textContent = `Pass: ${entry.password}`; icon.className = 'fas fa-eye-slash'; }
+            else { pEl.textContent = 'Pass: ••••••••'; icon.className = 'fas fa-eye'; }
+        }
+    });
     pv.searchInput.addEventListener('input', () => renderPasswords(pv.searchInput.value));
+    pv.entryPasswordInput.addEventListener('input', (e) => updateStrengthUI(e.target.value));
+    pv.passwordLength.addEventListener('input', (e) => { pv.passwordLengthValue.textContent = e.target.value; });
+    pv.generatePasswordBtn.addEventListener('click', () => {
+        const length = parseInt(pv.passwordLength.value, 10);
+        const sets = [
+            pv.useUppercase.checked ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' : '',
+            pv.useLowercase.checked ? 'abcdefghijklmnopqrstuvwxyz' : '',
+            pv.useNumbers.checked ? '0123456789' : '',
+            pv.useSymbols.checked ? '!@#$%^&*()_+{}[]<>?/|~' : ''
+        ].filter(Boolean);
+        if (sets.length === 0) { alert('Select at least one character set.'); return; }
+        const allChars = sets.join('');
+        let generated = '';
+        for (let i = 0; i < length; i += 1) {
+            generated += allChars[Math.floor(Math.random() * allChars.length)];
+        }
+        pv.entryPasswordInput.value = generated;
+        updateStrengthUI(generated);
+    });
+    pv.exportVaultBtn.addEventListener('click', () => {
+        const stored = localStorage.getItem(vaultStorageKey);
+        if (!stored) { alert('No vault data to export.'); return; }
+        const blob = new Blob([stored], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `vault_backup_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+    });
+    pv.importVaultBtn.addEventListener('click', () => pv.importVaultInput.click());
+    pv.importVaultInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                const imported = JSON.parse(reader.result);
+                if (!imported.username || !imported.encryptedData || !imported.security) { throw new Error('Invalid format'); }
+                if (!confirm('Importing will overwrite your current vault. Continue?')) return;
+                localStorage.setItem(vaultStorageKey, JSON.stringify(imported));
+                alert('Vault imported. Please log in again.');
+                handleLogout();
+            } catch (err) { alert('Import failed. Invalid backup file.'); }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+    });
     const dw = { webhookUrlInput: document.getElementById('webhookUrl'), messageContentInput: document.getElementById('messageContent'), usernameInput: document.getElementById('username'), avatarUrlInput: document.getElementById('avatarUrl'), sendMessageBtn: document.getElementById('sendMessageBtn'), clearFormBtn: document.getElementById('clearFormBtn'), statusMessage: document.getElementById('statusMessage'), spinner: document.getElementById('spinner') };
     if (localStorage.getItem('discordWebhookUrl')) { dw.webhookUrlInput.value = localStorage.getItem('discordWebhookUrl'); }
     const showStatus = (msg, err = false) => { dw.statusMessage.textContent = msg; dw.statusMessage.className = `p-4 rounded-lg text-sm text-center ${err ? 'bg-red-500/20 text-red-300' : 'bg-green-500/20 text-green-300'}`; };
     const setLoading = (load) => { dw.sendMessageBtn.disabled = load; dw.spinner.classList.toggle('hidden', !load); };
     dw.sendMessageBtn.addEventListener('click', async () => { const url = dw.webhookUrlInput.value.trim(), content = dw.messageContentInput.value.trim(); if (!url || !content) { showStatus('Webhook URL and Message are required.', true); return; } localStorage.setItem('discordWebhookUrl', url); const payload = { content, username: dw.usernameInput.value.trim() || undefined, avatar_url: dw.avatarUrlInput.value.trim() || undefined }; setLoading(true); try { const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (res.ok) { showStatus('Message sent successfully!', false); dw.messageContentInput.value = ''; } else { const errData = await res.json(); showStatus(`Failed to send: ${errData.message || 'Unknown error'}`, true); } } catch (error) { showStatus('An error occurred.', true); } finally { setLoading(false); } });
     dw.clearFormBtn.addEventListener('click', () => { dw.messageContentInput.value = ''; dw.usernameInput.value = ''; dw.avatarUrlInput.value = ''; dw.statusMessage.classList.add('hidden'); });
-    const init = () => { if (localStorage.getItem(vaultStorageKey)) { showScreen('login'); } else { populateSecurityQuestions(); showScreen('setup'); } const gapiScript = document.createElement('script'); gapiScript.src = 'https://apis.google.com/js/api.js'; gapiScript.onload = gapiLoaded; document.body.appendChild(gapiScript); const gisScript = document.createElement('script'); gisScript.src = 'https://accounts.google.com/gsi/client'; gisScript.onload = gisLoaded; document.body.appendChild(gisScript); };
+    const init = () => {
+        if (localStorage.getItem(vaultStorageKey)) { showScreen('login'); }
+        else { populateSecurityQuestions(); showScreen('setup'); }
+        pv.passwordLengthValue.textContent = pv.passwordLength.value;
+        updateStrengthUI('');
+        const gapiScript = document.createElement('script');
+        gapiScript.src = 'https://apis.google.com/js/api.js';
+        gapiScript.onload = gapiLoaded;
+        document.body.appendChild(gapiScript);
+        const gisScript = document.createElement('script');
+        gisScript.src = 'https://accounts.google.com/gsi/client';
+        gisScript.onload = gisLoaded;
+        document.body.appendChild(gisScript);
+    };
     init();
 });
 </script>
