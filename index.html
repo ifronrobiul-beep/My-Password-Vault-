@@ -66,6 +66,21 @@
         #vaultApp .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         #vaultApp .modal-content { background: var(--secondary-bg); padding: 2rem; border-radius: 16px; border: 1px solid var(--border-color); width: 90%; max-width: 500px; position: relative; }
         #vaultApp .modal .close-btn { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: #a0a0a0; font-size: 1.5rem; cursor: pointer; }
+        #vaultApp .insights-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        #vaultApp .insight-card { background: var(--primary-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 1rem; }
+        #vaultApp .insight-label { font-size: 0.9rem; color: #a0a0a0; margin-bottom: 0.35rem; }
+        #vaultApp .insight-value { font-size: 1.5rem; font-weight: 600; }
+        #vaultApp .chip { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.6rem; border-radius: 999px; font-size: 0.75rem; background: rgba(0, 246, 255, 0.12); color: var(--accent-color1); border: 1px solid rgba(0, 246, 255, 0.2); }
+        #vaultApp .health-bar { height: 8px; width: 100%; border-radius: 999px; background: #2b2b4a; overflow: hidden; }
+        #vaultApp .health-fill { height: 100%; width: 0%; transition: width 0.3s ease; }
+        #vaultApp .activity-list { list-style: none; padding: 0; margin-top: 0.75rem; }
+        #vaultApp .activity-item { display: flex; justify-content: space-between; font-size: 0.85rem; color: #c0c0c0; padding: 0.4rem 0; border-bottom: 1px dashed rgba(255,255,255,0.08); }
+        #vaultApp .strength-meter { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+        #vaultApp .strength-bar { flex: 1; height: 8px; border-radius: 999px; background: #2b2b4a; overflow: hidden; }
+        #vaultApp .strength-fill { height: 100%; width: 0%; transition: width 0.3s ease; }
+        #vaultApp .generator-controls { background: rgba(0, 246, 255, 0.06); border: 1px solid rgba(0, 246, 255, 0.15); border-radius: 12px; padding: 0.75rem; margin-top: 1rem; }
+        #vaultApp .toggle { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: #c0c0c0; }
+        #vaultApp .range-input { width: 100%; }
         
         #discordApp { font-family: 'Inter', sans-serif; }
     </style>
@@ -110,8 +125,28 @@
             <button id="driveBackupBtn" class="btn-generic btn-secondary" disabled><i class="fas fa-upload"></i>Backup to Drive</button>
             <button id="driveRestoreBtn" class="btn-generic btn-secondary" disabled><i class="fas fa-download"></i>Restore from Drive</button>
         </div>
+        <div class="insights-grid">
+            <div class="insight-card">
+                <div class="insight-label">Vault Entries</div>
+                <div id="totalEntries" class="insight-value">0</div>
+                <div class="chip"><i class="fas fa-database"></i><span>Encrypted locally</span></div>
+            </div>
+            <div class="insight-card">
+                <div class="insight-label">Password Health</div>
+                <div id="healthScore" class="insight-value">0%</div>
+                <div class="health-bar"><div id="healthFill" class="health-fill" style="background: var(--accent-color1);"></div></div>
+                <div class="insight-label" style="margin-top: 0.5rem;">Weak / Reused</div>
+                <div id="riskSummary" class="chip"><i class="fas fa-shield-exclamation"></i><span>0 / 0</span></div>
+            </div>
+            <div class="insight-card">
+                <div class="insight-label">Security Highlights</div>
+                <div class="chip" style="margin-bottom: 0.5rem;"><i class="fas fa-fingerprint"></i><span>Recovery Ready</span></div>
+                <div class="chip"><i class="fas fa-cloud-arrow-up"></i><span>Drive Backup</span></div>
+                <ul id="activityList" class="activity-list"></ul>
+            </div>
+        </div>
         <ul id="passwordList" class="password-list"></ul>
-        <div id="passwordModal" class="modal hidden"><div class="modal-content"><button class="close-btn">&times;</button><h2 id="modalTitle" style="text-align:center; margin-bottom: 1.5rem;">Add New Entry</h2><form id="passwordForm"><input type="hidden" id="passwordId"><div class="form-group"><label for="websiteName">Website Name</label><input type="text" id="websiteName" required></div><div class="form-group"><label for="entryUsername">Username / Email</label><input type="text" id="entryUsername" required></div><div class="form-group"><label for="entryPassword">Password</label><input type="password" id="entryPassword" required></div><button type="submit" class="btn-submit">Save Entry</button></form></div></div>
+        <div id="passwordModal" class="modal hidden"><div class="modal-content"><button class="close-btn">&times;</button><h2 id="modalTitle" style="text-align:center; margin-bottom: 1.5rem;">Add New Entry</h2><form id="passwordForm"><input type="hidden" id="passwordId"><div class="form-group"><label for="websiteName">Website Name</label><input type="text" id="websiteName" required></div><div class="form-group"><label for="entryUsername">Username / Email</label><input type="text" id="entryUsername" required></div><div class="form-group"><label for="entryPassword">Password</label><input type="password" id="entryPassword" required><div class="strength-meter"><div class="strength-bar"><div id="strengthFill" class="strength-fill"></div></div><span id="strengthLabel" style="font-size:0.85rem; color:#a0a0a0;">Strength</span></div></div><div class="generator-controls"><div class="form-group"><label for="passwordLength">Password Length: <span id="lengthValue">16</span></label><input type="range" id="passwordLength" class="range-input" min="8" max="32" value="16"></div><div style="display:flex; flex-wrap:wrap; gap:0.75rem; margin-bottom:0.75rem;"><label class="toggle"><input type="checkbox" id="includeSymbols" checked> Include symbols</label><label class="toggle"><input type="checkbox" id="includeNumbers" checked> Include numbers</label><label class="toggle"><input type="checkbox" id="includeUppercase" checked> Include uppercase</label></div><button type="button" id="generatePasswordBtn" class="btn-generic btn-secondary" style="width:100%;"><i class="fas fa-wand-magic-sparkles"></i>Generate Strong Password</button></div><button type="submit" class="btn-submit">Save Entry</button></form></div></div>
     </div>
     
     <div id="discordApp" class="hidden">
@@ -154,8 +189,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const screens = { auth: document.getElementById('authContainer'), login: document.getElementById('loginScreen'), setup: document.getElementById('setupScreen'), recovery: document.getElementById('recoveryScreen'), dashboard: document.getElementById('toolDashboard'), vault: document.getElementById('vaultApp'), discord: document.getElementById('discordApp') };
     const showScreen = (screenName) => { Object.values(screens).forEach(s => s.classList.add('hidden')); const screenToShow = screens[screenName]; if (screenToShow) { screenToShow.classList.remove('hidden'); if (['login', 'setup', 'recovery'].includes(screenName)) { screens.auth.classList.remove('hidden'); } } };
     const vaultStorageKey = 'masterDashboardData';
+    const activityLogKey = 'masterDashboardActivity';
     let activePassword = '';
     let passwordEntries = [];
+    let activityLog = [];
     const securityQuestions = [ "What was the name of your first pet?", "What is your mother's maiden name?", "What was the name of your elementary school?", "In what city were you born?", "What is your favorite movie?", "What was the make of your first car?" ];
     const encrypt = (text, key) => CryptoJS.AES.encrypt(text, key).toString();
     const decrypt = (ciphertext, key) => CryptoJS.AES.decrypt(ciphertext, key).toString(CryptoJS.enc.Utf8);
@@ -222,30 +259,79 @@ document.addEventListener('DOMContentLoaded', () => {
     // This logic is identical to the previous version and is included here for completeness.
     const populateSecurityQuestions = () => { const q1 = document.getElementById('q1'), q2 = document.getElementById('q2'); securityQuestions.forEach(q => { q1.innerHTML += `<option value="${q}">${q}</option>`; q2.innerHTML += `<option value="${q}">${q}</option>`; }); q1.selectedIndex = 0; q2.selectedIndex = 1; };
     document.getElementById('setupForm').addEventListener('submit', (e) => { e.preventDefault(); const u = document.getElementById('setupUsername').value.trim(), p = document.getElementById('setupPassword').value, q1 = document.getElementById('q1').value, a1 = document.getElementById('a1').value.trim(), q2 = document.getElementById('q2').value, a2 = document.getElementById('a2').value.trim(); if (!u || !p || !a1 || !a2 || q1 === q2) return; const d = { username: u, encryptedData: encrypt(JSON.stringify([]), p), security: { q1, q2, answersHash: hash(a1 + a2) } }; localStorage.setItem(vaultStorageKey, JSON.stringify(d)); activePassword = p; showScreen('dashboard'); });
-    document.getElementById('loginForm').addEventListener('submit', (e) => { e.preventDefault(); const u = document.getElementById('loginUsername').value.trim(), p = document.getElementById('loginPassword').value, d = JSON.parse(localStorage.getItem(vaultStorageKey)); if (d && d.username.toLowerCase() === u.toLowerCase()) { try { const dec = decrypt(d.encryptedData, p); if (!dec) throw new Error(); activePassword = p; passwordEntries = JSON.parse(dec); renderPasswords(); showScreen('dashboard'); document.getElementById('loginError').style.display = 'none'; e.target.reset(); } catch (err) { document.getElementById('loginError').style.display = 'block'; } } else { document.getElementById('loginError').style.display = 'block'; } });
+    document.getElementById('loginForm').addEventListener('submit', (e) => { e.preventDefault(); const u = document.getElementById('loginUsername').value.trim(), p = document.getElementById('loginPassword').value, d = JSON.parse(localStorage.getItem(vaultStorageKey)); if (d && d.username.toLowerCase() === u.toLowerCase()) { try { const dec = decrypt(d.encryptedData, p); if (!dec) throw new Error(); activePassword = p; passwordEntries = JSON.parse(dec); activityLog = JSON.parse(localStorage.getItem(activityLogKey) || '[]'); renderPasswords(); updateVaultInsights(); showScreen('dashboard'); document.getElementById('loginError').style.display = 'none'; e.target.reset(); } catch (err) { document.getElementById('loginError').style.display = 'block'; } } else { document.getElementById('loginError').style.display = 'block'; } });
     document.getElementById('forgotPasswordLink').addEventListener('click', () => { const d = JSON.parse(localStorage.getItem(vaultStorageKey)); if (!d) { alert("No account found."); return; } document.getElementById('recoveryQ1').textContent = d.security.q1; document.getElementById('recoveryQ2').textContent = d.security.q2; showScreen('recovery'); });
     document.getElementById('recoveryForm').addEventListener('submit', (e) => { e.preventDefault(); const a1 = document.getElementById('recoveryA1').value.trim(), a2 = document.getElementById('recoveryA2').value.trim(), d = JSON.parse(localStorage.getItem(vaultStorageKey)); if (hash(a1 + a2) === d.security.answersHash) { const nP = prompt("OK! New password (min 6 chars). WARNING: This resets your password but ERASEs saved entries."); if (nP && nP.length >= 6) { d.encryptedData = encrypt(JSON.stringify([]), nP); localStorage.setItem(vaultStorageKey, JSON.stringify(d)); alert("Password reset. Vault is empty. Please log in."); showScreen('login'); } else if (nP !== null) { alert("Password too short."); } } else { document.getElementById('recoveryError').style.display = 'block'; } });
     document.getElementById('backToLoginLink').addEventListener('click', () => showScreen('login'));
     document.getElementById('selectVault').addEventListener('click', () => showScreen('vault'));
     document.getElementById('selectDiscord').addEventListener('click', () => showScreen('discord'));
     document.querySelectorAll('.back-to-dashboard-btn').forEach(btn => btn.addEventListener('click', () => showScreen('dashboard')));
-    function handleLogout() { activePassword = ''; passwordEntries = []; showScreen('login'); }
+    function handleLogout() { activePassword = ''; passwordEntries = []; activityLog = []; showScreen('login'); }
     document.getElementById('mainLogoutBtn').addEventListener('click', handleLogout); document.getElementById('vaultLogoutBtn').addEventListener('click', handleLogout);
-    const pv = { addPasswordBtn: document.getElementById('addPasswordBtn'), passwordModal: document.getElementById('passwordModal'), searchInput: document.getElementById('searchInput'), passwordList: document.getElementById('passwordList'), passwordForm: document.getElementById('passwordForm'), modalTitle: document.getElementById('modalTitle'), passwordIdInput: document.getElementById('passwordId') };
+    const pv = { addPasswordBtn: document.getElementById('addPasswordBtn'), passwordModal: document.getElementById('passwordModal'), searchInput: document.getElementById('searchInput'), passwordList: document.getElementById('passwordList'), passwordForm: document.getElementById('passwordForm'), modalTitle: document.getElementById('modalTitle'), passwordIdInput: document.getElementById('passwordId'), strengthFill: document.getElementById('strengthFill'), strengthLabel: document.getElementById('strengthLabel'), passwordLength: document.getElementById('passwordLength'), lengthValue: document.getElementById('lengthValue'), includeSymbols: document.getElementById('includeSymbols'), includeNumbers: document.getElementById('includeNumbers'), includeUppercase: document.getElementById('includeUppercase'), generatePasswordBtn: document.getElementById('generatePasswordBtn') };
     const savePasswordsToStorage = () => { const d = JSON.parse(localStorage.getItem(vaultStorageKey)); d.encryptedData = encrypt(JSON.stringify(passwordEntries), activePassword); localStorage.setItem(vaultStorageKey, JSON.stringify(d)); };
+    const logActivity = (message) => { const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); activityLog.unshift({ message, time }); activityLog = activityLog.slice(0, 5); localStorage.setItem(activityLogKey, JSON.stringify(activityLog)); };
+    const strengthScore = (password) => { let score = 0; if (password.length >= 12) score += 1; if (/[A-Z]/.test(password)) score += 1; if (/[0-9]/.test(password)) score += 1; if (/[^A-Za-z0-9]/.test(password)) score += 1; if (password.length >= 16) score += 1; return Math.min(score, 4); };
+    const strengthLabel = (score) => ['Weak', 'Fair', 'Good', 'Strong', 'Elite'][score] || 'Weak';
+    const strengthColor = (score) => ['#e74c3c', '#f39c12', '#f1c40f', '#2ecc71', '#00f6ff'][score] || '#e74c3c';
+    const updateStrengthMeter = (password) => { const score = strengthScore(password); const pct = ((score + 1) / 5) * 100; pv.strengthFill.style.width = `${pct}%`; pv.strengthFill.style.background = strengthColor(score); pv.strengthLabel.textContent = strengthLabel(score); };
+    const updateVaultInsights = () => {
+        const totalEntries = document.getElementById('totalEntries');
+        const healthScore = document.getElementById('healthScore');
+        const healthFill = document.getElementById('healthFill');
+        const riskSummary = document.getElementById('riskSummary');
+        const activityList = document.getElementById('activityList');
+        const total = passwordEntries.length;
+        const passwordMap = passwordEntries.reduce((acc, entry) => { acc[entry.password] = (acc[entry.password] || 0) + 1; return acc; }, {});
+        const reused = Object.values(passwordMap).filter(count => count > 1).reduce((a, b) => a + b, 0);
+        const weak = passwordEntries.filter(entry => strengthScore(entry.password) <= 1).length;
+        const score = total === 0 ? 0 : Math.max(0, Math.round(((total - weak - reused) / total) * 100));
+        totalEntries.textContent = total.toString();
+        healthScore.textContent = `${score}%`;
+        healthFill.style.width = `${score}%`;
+        riskSummary.innerHTML = `<i class="fas fa-triangle-exclamation"></i><span>${weak} / ${reused}</span>`;
+        activityList.innerHTML = '';
+        if (activityLog.length === 0) {
+            activityList.innerHTML = `<li class="activity-item"><span>No recent activity</span><span>--</span></li>`;
+        } else {
+            activityLog.forEach(item => { const li = document.createElement('li'); li.className = 'activity-item'; li.innerHTML = `<span>${item.message}</span><span>${item.time}</span>`; activityList.appendChild(li); });
+        }
+    };
     const renderPasswords = (f = '') => { pv.passwordList.innerHTML = ''; const filt = passwordEntries.filter(p => p.name.toLowerCase().includes(f.toLowerCase()) || p.username.toLowerCase().includes(f.toLowerCase())); if (filt.length === 0) { pv.passwordList.innerHTML = `<li class="password-item" style="justify-content:center;">${passwordEntries.length === 0 ? 'Vault is empty.' : 'No results.'}</li>`; } filt.forEach(p => { const li = document.createElement('li'); li.className = 'password-item'; li.dataset.id = p.id; li.innerHTML = `<div><h3 style="color: var(--accent-color1);">${p.name}</h3><p style="font-family: monospace; color: #a0a0a0;">User: ${p.username}</p><p class="password-text-display" style="font-family: monospace; color: #a0a0a0;">Pass: ••••••••</p></div><div class="actions" style="display: flex; gap: 0.5rem;"><button class="view-pass-btn" title="Show/Hide"><i class="fas fa-eye"></i></button><button class="copy-pass-btn" title="Copy Pass"><i class="fas fa-copy"></i></button><button class="edit-btn" title="Edit"><i class="fas fa-pencil-alt"></i></button><button class="delete-btn" title="Delete"><i class="fas fa-trash"></i></button></div>`; pv.passwordList.appendChild(li); }); };
-    pv.addPasswordBtn.addEventListener('click', () => { pv.passwordForm.reset(); pv.passwordIdInput.value = ''; pv.modalTitle.textContent = 'Add New Entry'; pv.passwordModal.classList.remove('hidden'); });
+    pv.addPasswordBtn.addEventListener('click', () => { pv.passwordForm.reset(); pv.passwordIdInput.value = ''; pv.modalTitle.textContent = 'Add New Entry'; updateStrengthMeter(''); pv.passwordModal.classList.remove('hidden'); });
     pv.passwordModal.querySelector('.close-btn').addEventListener('click', () => pv.passwordModal.classList.add('hidden'));
-    pv.passwordForm.addEventListener('submit', (e) => { e.preventDefault(); const entry = { id: pv.passwordIdInput.value || Date.now().toString(), name: document.getElementById('websiteName').value, username: document.getElementById('entryUsername').value, password: document.getElementById('entryPassword').value }; const idx = passwordEntries.findIndex(p => p.id === entry.id); if (idx > -1) { passwordEntries[idx] = entry; } else { passwordEntries.push(entry); } savePasswordsToStorage(); renderPasswords(pv.searchInput.value); pv.passwordModal.classList.add('hidden'); });
-    pv.passwordList.addEventListener('click', (e) => { const btn = e.target.closest('button'); if (!btn) return; const li = btn.closest('.password-item'), id = li.dataset.id, entry = passwordEntries.find(p => p.id === id); if (btn.classList.contains('delete-btn')) { if (confirm(`Delete ${entry.name}?`)) { passwordEntries = passwordEntries.filter(p => p.id !== id); savePasswordsToStorage(); renderPasswords(pv.searchInput.value); } } else if (btn.classList.contains('edit-btn')) { pv.modalTitle.textContent = 'Edit Entry'; pv.passwordIdInput.value = entry.id; document.getElementById('websiteName').value = entry.name; document.getElementById('entryUsername').value = entry.username; document.getElementById('entryPassword').value = entry.password; pv.passwordModal.classList.remove('hidden'); } else if (btn.classList.contains('copy-pass-btn')) { navigator.clipboard.writeText(entry.password).then(() => { const i = btn.innerHTML; btn.innerHTML = '<i class="fas fa-check"></i>'; setTimeout(() => { btn.innerHTML = i; }, 1500); }); } else if (btn.classList.contains('view-pass-btn')) { const pEl = li.querySelector('.password-text-display'), icon = btn.querySelector('i'); if (pEl.textContent.includes('•')) { pEl.textContent = `Pass: ${entry.password}`; icon.className = 'fas fa-eye-slash'; } else { pEl.textContent = 'Pass: ••••••••'; icon.className = 'fas fa-eye'; } } });
+    pv.passwordForm.addEventListener('submit', (e) => { e.preventDefault(); const entry = { id: pv.passwordIdInput.value || Date.now().toString(), name: document.getElementById('websiteName').value, username: document.getElementById('entryUsername').value, password: document.getElementById('entryPassword').value, updatedAt: new Date().toISOString() }; const idx = passwordEntries.findIndex(p => p.id === entry.id); if (idx > -1) { passwordEntries[idx] = entry; logActivity(`Updated ${entry.name}`); } else { passwordEntries.push(entry); logActivity(`Added ${entry.name}`); } savePasswordsToStorage(); renderPasswords(pv.searchInput.value); updateVaultInsights(); pv.passwordModal.classList.add('hidden'); });
+    pv.passwordList.addEventListener('click', (e) => { const btn = e.target.closest('button'); if (!btn) return; const li = btn.closest('.password-item'), id = li.dataset.id, entry = passwordEntries.find(p => p.id === id); if (btn.classList.contains('delete-btn')) { if (confirm(`Delete ${entry.name}?`)) { passwordEntries = passwordEntries.filter(p => p.id !== id); savePasswordsToStorage(); logActivity(`Deleted ${entry.name}`); renderPasswords(pv.searchInput.value); updateVaultInsights(); } } else if (btn.classList.contains('edit-btn')) { pv.modalTitle.textContent = 'Edit Entry'; pv.passwordIdInput.value = entry.id; document.getElementById('websiteName').value = entry.name; document.getElementById('entryUsername').value = entry.username; document.getElementById('entryPassword').value = entry.password; updateStrengthMeter(entry.password); pv.passwordModal.classList.remove('hidden'); } else if (btn.classList.contains('copy-pass-btn')) { navigator.clipboard.writeText(entry.password).then(() => { const i = btn.innerHTML; btn.innerHTML = '<i class="fas fa-check"></i>'; setTimeout(() => { btn.innerHTML = i; }, 1500); }); } else if (btn.classList.contains('view-pass-btn')) { const pEl = li.querySelector('.password-text-display'), icon = btn.querySelector('i'); if (pEl.textContent.includes('•')) { pEl.textContent = `Pass: ${entry.password}`; icon.className = 'fas fa-eye-slash'; } else { pEl.textContent = 'Pass: ••••••••'; icon.className = 'fas fa-eye'; } } });
     pv.searchInput.addEventListener('input', () => renderPasswords(pv.searchInput.value));
+    document.getElementById('entryPassword').addEventListener('input', (e) => updateStrengthMeter(e.target.value));
+    pv.passwordLength.addEventListener('input', () => { pv.lengthValue.textContent = pv.passwordLength.value; });
+    pv.generatePasswordBtn.addEventListener('click', () => {
+        const length = parseInt(pv.passwordLength.value, 10);
+        const sets = {
+            lower: 'abcdefghijklmnopqrstuvwxyz',
+            upper: pv.includeUppercase.checked ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' : '',
+            numbers: pv.includeNumbers.checked ? '0123456789' : '',
+            symbols: pv.includeSymbols.checked ? '!@#$%^&*()_+{}[]<>?,.' : ''
+        };
+        const combined = sets.lower + sets.upper + sets.numbers + sets.symbols;
+        if (!combined) return;
+        let generated = '';
+        const requiredSets = [sets.upper, sets.numbers, sets.symbols].filter(Boolean);
+        for (let i = 0; i < length; i += 1) {
+            const set = combined;
+            generated += set[Math.floor(Math.random() * set.length)];
+        }
+        requiredSets.forEach(set => { const index = Math.floor(Math.random() * generated.length); generated = `${generated.slice(0, index)}${set[Math.floor(Math.random() * set.length)]}${generated.slice(index + 1)}`; });
+        document.getElementById('entryPassword').value = generated;
+        updateStrengthMeter(generated);
+    });
     const dw = { webhookUrlInput: document.getElementById('webhookUrl'), messageContentInput: document.getElementById('messageContent'), usernameInput: document.getElementById('username'), avatarUrlInput: document.getElementById('avatarUrl'), sendMessageBtn: document.getElementById('sendMessageBtn'), clearFormBtn: document.getElementById('clearFormBtn'), statusMessage: document.getElementById('statusMessage'), spinner: document.getElementById('spinner') };
     if (localStorage.getItem('discordWebhookUrl')) { dw.webhookUrlInput.value = localStorage.getItem('discordWebhookUrl'); }
     const showStatus = (msg, err = false) => { dw.statusMessage.textContent = msg; dw.statusMessage.className = `p-4 rounded-lg text-sm text-center ${err ? 'bg-red-500/20 text-red-300' : 'bg-green-500/20 text-green-300'}`; };
     const setLoading = (load) => { dw.sendMessageBtn.disabled = load; dw.spinner.classList.toggle('hidden', !load); };
     dw.sendMessageBtn.addEventListener('click', async () => { const url = dw.webhookUrlInput.value.trim(), content = dw.messageContentInput.value.trim(); if (!url || !content) { showStatus('Webhook URL and Message are required.', true); return; } localStorage.setItem('discordWebhookUrl', url); const payload = { content, username: dw.usernameInput.value.trim() || undefined, avatar_url: dw.avatarUrlInput.value.trim() || undefined }; setLoading(true); try { const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (res.ok) { showStatus('Message sent successfully!', false); dw.messageContentInput.value = ''; } else { const errData = await res.json(); showStatus(`Failed to send: ${errData.message || 'Unknown error'}`, true); } } catch (error) { showStatus('An error occurred.', true); } finally { setLoading(false); } });
     dw.clearFormBtn.addEventListener('click', () => { dw.messageContentInput.value = ''; dw.usernameInput.value = ''; dw.avatarUrlInput.value = ''; dw.statusMessage.classList.add('hidden'); });
-    const init = () => { if (localStorage.getItem(vaultStorageKey)) { showScreen('login'); } else { populateSecurityQuestions(); showScreen('setup'); } const gapiScript = document.createElement('script'); gapiScript.src = 'https://apis.google.com/js/api.js'; gapiScript.onload = gapiLoaded; document.body.appendChild(gapiScript); const gisScript = document.createElement('script'); gisScript.src = 'https://accounts.google.com/gsi/client'; gisScript.onload = gisLoaded; document.body.appendChild(gisScript); };
+    const init = () => { if (localStorage.getItem(vaultStorageKey)) { showScreen('login'); } else { populateSecurityQuestions(); showScreen('setup'); } updateStrengthMeter(''); updateVaultInsights(); const gapiScript = document.createElement('script'); gapiScript.src = 'https://apis.google.com/js/api.js'; gapiScript.onload = gapiLoaded; document.body.appendChild(gapiScript); const gisScript = document.createElement('script'); gisScript.src = 'https://accounts.google.com/gsi/client'; gisScript.onload = gisLoaded; document.body.appendChild(gisScript); };
     init();
 });
 </script>
